@@ -1,0 +1,44 @@
+:noaudio:
+:scrollbar:
+:toc2:
+:linkattrs:
+:data-uri:
+
+== Secure APIs With OpenID Connect lab
+
+The APIs you deployed and configured until now on the 3scale API Management platform were secured with an API Key (user key), or with a combination of an App ID and an App Key.
+
+In this lab you secure an API with Open ID Connect (OIDC), using Red Hat Single Sign-On (RH-SSO) as identity provider.
+
+.Goals
+* Integration of 3scale with Red Hat Single Sign-On
+* Synchronize between 3scale and RH-SSO
+* Secure APIs using OpenID Connect and _Authorization Code_ flow protocol
+
+:numbered:
+
+== Integration of 3scale with Red Hat Single Sign-On
+=== Configuring Zync to use custom CA certificates
+You must establish an SSL connection between Zync and Red Hat Single Sign-On (RH-SSO), because Zync operates with RH-SSO to exchange tokens. If you do not configure the SSL connection between Zync and RH-SSO, the tokens would be open for anyone listening.
+
+3scale 2.2 and above supports custom CA certificates for RH-SSO with the SSL_CERT_FILE environment variable. This variable points to the local path of the certificates bundle.
+
+==== Check if you are able to serve RHSSO over https, opening the zync-que pod and sending a request using curl to rhsso-fqdn.
+----
+$ curl https://rhsso-fqdn
+----
+==== Procedure
+Run the following command to get a proper certificate chain:
+----
+$ echo -n | openssl s_client -connect <rhsso_fqdn>:<rhsso_port> -servername <rhsso_fqdn> --showcerts | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > customCA.pem
+----
+Validate the new certificate with the following cURL command
+----
+$ curl -v https://<secure-sso-host>/auth/realms/master --cacert customCA.pem
+----
+
+Add the certificate bundle to the Zync pod:
+Copy the pem from the zync-que pod.
+----
+$ oc exec <zync-que-pod-id> cat /etc/pki/tls/cert.pem > zync.pem
+----
